@@ -6,12 +6,47 @@
 
 #include <shark/Data/Dataset.h>
 #include <shark/Data/Csv.h>
+#include <shark/ObjectiveFunctions/Loss/SquaredLoss.h>
+#include <shark/Models/FFNet.h>
 
 using shark::LabeledData;
 using shark::RealVector;
 using shark::RealMatrix;
 
-LabeledData<RealVector, RealVector> loadData()
+using std::vector;
+
+vector<vector<size_t> > genMidLayers(unsigned beg, unsigned end, unsigned count)
+{
+    vector<vector<size_t> > lst;
+    if(count == 1){
+        for(int i = beg; i <= end; i++){
+            vector<size_t> l;
+            l.push_back(i);
+            lst.push_back(l);
+        }
+    }
+    else{
+        vector<vector<size_t> > lst2 = genMidLayers(beg, end, count - 1);
+        for(int i = beg; i <= end; i++){
+            for(int j = 0; j < lst2.size(); j++){
+                vector<size_t> l = lst2[j];
+                l.push_back(i);
+                lst.push_back(l);
+            }
+        }
+    }
+    return lst;
+}
+
+int push_back_s(vector<size_t> *changeable, const vector<size_t> &items)
+{
+    vector<size_t>::const_iterator item;
+    for(item = items.begin(); item != items.end(); item++){
+        changeable->push_back(*item);
+    }
+}
+
+LabeledData<RealVector, RealVector> loadData(size_t *inCount)
 {
     shark::Data<RealVector> data;
     shark::Data<RealVector> labels;
@@ -51,88 +86,76 @@ int echoArrayP(std::vector<std::vector<double> *> arr, std::string pre = "")
     std::cout << std::endl;
 }
 
+int echoArch(vector<vector<size_t> > arr, std::string pre = "")
+{
+    std::cout << pre;
+    for(int ul = 0; ul < arr.size(); ul++) {
+        if(ul == arr.size() - 1)
+            std::cout << arr[ul].size();
+        else
+            std::cout << arr[ul].size() << "->";
+    }
+    std::cout << std::endl;
+}
+
 int main(int argc, const char *argv[])
 {
+    /* Tested!
+       vector<vector<size_t> > l = genMidLayers(-1, 3, 5);
+       for(vector<vector<size_t> >::iterator i = l.begin(); i != l.end(); i++){
+       for(vector<size_t>::iterator j = i->begin(); j != i->end(); j++){
+       std::cout << *j << " ";
+       }
+       std::cout << std::endl;
+       }
+       std::cout << l.size() << std::endl;
+       return 0;
+       */
     int n = 4;
-    int seg_test = 4;
-    int seg_calib= 4;
 
-    /* Maybe vector of pointers to vector ? */
-    std::vector<std::vector<double>* > x_in;
-    std::vector<std::vector<double>* > y_in;
+    // ========== First hidden layer configuration ========== //
+    // Lower bound of items of first hidden layer
+    unsigned int firstHiddenLayerLB = 12;
+    // Higher bound of items of first hidden layer
+    unsigned int firstHiddenLayerTB = 20;
 
-    /*Initializing dataset*/
-    for(int i = 0; i < 12; i++) {
-        std::vector<double> *x_i = new std::vector<double>;
-        std::vector<double> *y_i = new std::vector<double>;
+    // ========== Other hidden layers configuration ========== //
+    // Lower bound of hidden layers
+    unsigned int hiddenLayersLB = 1;
+    // Higher bound of hidden layers
+    unsigned int hiddenLayersTB = 4;
+    // Lower bound of items for hidden layers
+    unsigned int generalHiddenLayerLB = 1;
+    // Higher bound of items for hidden layers
+    unsigned int generalHiddenLayerTB = 6;
 
-        double a = i + 0.1;
+    shark::FFNet<shark::LogisticNeuron, shark::LinearNeuron> network;
+    LabeledData<RealVector, RealVector> dataset = loadData();
+    size_t in_cnt dataset.inputContainer.numberOfElements();
+    shark::SquaredLoss<> loss;
 
-        double sum = 0;
-        double p = 1;
-        for(int j = 0; j < 10; j++) {
-            double b = a * pow(-1.0, j) + j * pow(-1.0, j+1);
-            x_i->push_back(b);
-            sum += b;
-            p *= b;
+
+    for(int fhl = firstHiddenLayerLB; fhl < firstHiddenLayerTB; fhl++){
+        for(int hlCount = hiddenLayersLB; hlCount < hiddenLayersTB; hlCount++){
+            if(hlCount > 0){
+                vector<vector<size_t> > hiddenMidLayers = genMidLayers(generalHiddenLayerLB, generalHiddenLayersTB, hlCount);
+                vector<vector<size_t> >::iterator l;
+                for(l = hiddenMidLayers.begin(); l != hiddenMidLayers.end(); l++){
+                    std::vector<size_t> layers;
+                    // Setting up architecture of NN
+                    layers.push_back(in_cnt);
+                    layers.push_back(fhl);
+                    push_back_s(&layer, l);
+                    layers.push_back(1);
+
+                    network.setStructure(layers, shark::FFNetStructures::Normal, true);
+                    // All prepared
+                    echoArch(layers);
+                }
+            }
         }
-        y_i->push_back(sum);
-        y_i->push_back(p);
-        y_i->push_back(p - sum);
-
-        x_in.push_back(x_i);
-        y_in.push_back(y_i);
     }
 
-    /*Splitting dataset*/
-
-    std::cout << "==========X==========\n";
-    echoArray(x_in);
-    //std::cout << "==========Y==========\n";
-    //echoArrayP(y_in);
-
-    /* Runing through the vectors dataset */
-    /* There is now sequential but rewrite for random */
-    for(int tau = 0; tau < n - 1; tau++) {
-        /* Setting range of test set */
-        int test_set_begin = tau * n;
-        int test_set_end = (tau + 1) * n - 1;
-
-        /* Setting test set and validation set */
-        std::vector<std::vector<double> *> test_set_x;
-        std::vector<std::vector<double> *> test_set_y;
-
-        std::vector<std::vector<double> *> clb_set_x;
-        std::vector<std::vector<double> *> clb_set_y;
-
-        for(int clb = 0; clb < test_set_begin; clb++) {
-            clb_set_x.push_back( x_in[clb] );
-            clb_set_y.push_back( y_in[clb] );
-        }
-        for(int clb = test_set_begin; clb <= test_set_end; clb++) {
-            test_set_x.push_back( x_in[clb] );
-            test_set_y.push_back( y_in[clb] );
-        }
-        for(int clb = test_set_end + 1; clb < x_in.size(); clb++) {
-            clb_set_x.push_back( x_in[clb] );
-            clb_set_y.push_back( y_in[clb] );
-        }
-        std::cout << "==========X" << tau << "_test==========\n";
-        echoArray(test_set_x, "\t");
-        //std::cout << "==========Y" << tau << "_test==========\n";
-        //echoArray(test_set_y, "\t");
-
-        std::cout << "==========X" << tau << "_clb==========\n";
-        echoArray(clb_set_x, "\t");
-        //std::cout << "==========Y" << tau << "_clb==========\n";
-        //echoArray(clb_set_y, "\t");
-    }
-
-    /* Destruct datasets */
-    for(int del = 0; del < x_in.size(); del++)
-    {
-        delete x_in[del];
-        delete y_in[del];
-    }
     return 0;
+    //*/
 }

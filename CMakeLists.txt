@@ -38,10 +38,11 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
     ENDIF((CMAKE_BUILD_TYPE MATCHES "release") OR (CMAKE_BUILD_TYPE MATCHES "RELEASE"))
 
 #enable or disable debugging
+    SET(BOOST_LIB_DIR /usr/local/lib)
     IF(CMAKE_BUILD_TYPE MATCHES "Debug")
         ADD_DEFINITIONS(-DDEBUG )
         SET( LINK_LIBRARIES
-                /usr/lib64/libboost_system.a;/usr/lib64/libboost_date_time.a;/usr/lib64/libboost_filesystem.a;/usr/lib64/libboost_program_options.a;/usr/lib64/libboost_signals.a;/usr/lib64/libboost_serialization.a;/usr/lib64/libboost_thread.a;/usr/lib64/libboost_unit_test_framework.a
+                ${BOOST_LIB_DIR}/libboost_system.a;${BOOST_LIB_DIR}/libboost_date_time.a;${BOOST_LIB_DIR}/libboost_filesystem.a;${BOOST_LIB_DIR}/libboost_program_options.a;${BOOST_LIB_DIR}/libboost_signals.a;${BOOST_LIB_DIR}/libboost_serialization.a;${BOOST_LIB_DIR}/libboost_thread.a;${BOOST_LIB_DIR}/libboost_unit_test_framework.a
                 /usr/local/lib/libshark_debug.a
            )
     ENDIF (CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -50,13 +51,13 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
         ADD_DEFINITIONS(-DNDEBUG )
         ADD_DEFINITIONS(-DBOOST_UBLAS_NDEBUG )
         SET( LINK_LIBRARIES
-                /usr/lib64/libboost_system.a;/usr/lib64/libboost_date_time.a;/usr/lib64/libboost_filesystem.a;/usr/lib64/libboost_program_options.a;/usr/lib64/libboost_signals.a;/usr/lib64/libboost_serialization.a;/usr/lib64/libboost_thread.a;/usr/lib64/libboost_unit_test_framework.a
+                ${BOOST_LIB_DIR}/libboost_system.a;${BOOST_LIB_DIR}/libboost_date_time.a;${BOOST_LIB_DIR}/libboost_filesystem.a;${BOOST_LIB_DIR}/libboost_program_options.a;${BOOST_LIB_DIR}/libboost_signals.a;${BOOST_LIB_DIR}/libboost_serialization.a;${BOOST_LIB_DIR}/libboost_thread.a;${BOOST_LIB_DIR}/libboost_unit_test_framework.a
                 /usr/local/lib/libshark.a
            )
     ENDIF (CMAKE_BUILD_TYPE MATCHES "Release")
 
 #add boost include directory
-include_directories ( /usr/include/boost )
+include_directories ( /usr/local/include/boost )
 
 #handle ATLAS
     OPTION(OPT_ENABLE_ATLAS "Enable Atlas as Linear Algebra library" OFF)
