@@ -8,6 +8,7 @@
 #include <shark/Data/Csv.h>
 #include <shark/ObjectiveFunctions/Loss/SquaredLoss.h>
 #include <shark/Models/FFNet.h>
+#include <shark/Core/Exception.h>
 
 using shark::LabeledData;
 using shark::RealVector;
@@ -46,18 +47,19 @@ int push_back_s(vector<size_t> *changeable, const vector<size_t> &items)
     }
 }
 
-LabeledData<RealVector, RealVector> loadData(size_t *inCount)
+LabeledData<RealVector, RealVector> loadData()
 {
     shark::Data<RealVector> data;
     shark::Data<RealVector> labels;
 
-    std::string dataFile = "./data/descriptors.csv";
-    std::string labelsFile = "./data/mtp.csv";
+    std::string dataFile = "descriptors.csv";
+    std::string labelsFile = "mtp.csv";
 
     try{
-        shark::importCSV(data, dataFile, ' ', '#');
         shark::importCSV(labels, labelsFile, ' ', '#');
-    } catch (...) {
+        shark::importCSV(data, dataFile, ' ', '#');
+    } catch (shark::Exception e){
+        std::cerr << "Exception!\n\t" << e.file() << "\t" << e.line() << "\t" << e.what() << std::endl;
         std::cerr << "Unable to open file " <<  dataFile << " and/or " << labelsFile << ". Check paths!" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -68,8 +70,7 @@ LabeledData<RealVector, RealVector> loadData(size_t *inCount)
 int echoArray(std::vector<std::vector<double> *> arr, std::string pre = "")
 {
     std::vector<std::vector<double> *>::iterator ul;
-    for(ul = arr.begin(); ul != arr.end(); ul++)
-    {
+    for(ul = arr.begin(); ul != arr.end(); ul++) {
         std::vector<double>::iterator dl;
         std::cout << pre;
         for(dl = (*ul)->begin(); dl != (*ul)->end(); dl++)
@@ -86,31 +87,20 @@ int echoArrayP(std::vector<std::vector<double> *> arr, std::string pre = "")
     std::cout << std::endl;
 }
 
-int echoArch(vector<vector<size_t> > arr, std::string pre = "")
+int echoArch(vector<size_t> arr, std::string pre = "")
 {
     std::cout << pre;
     for(int ul = 0; ul < arr.size(); ul++) {
         if(ul == arr.size() - 1)
-            std::cout << arr[ul].size();
+            std::cout << arr[ul];
         else
-            std::cout << arr[ul].size() << "->";
+            std::cout << arr[ul] << "->";
     }
     std::cout << std::endl;
 }
 
 int main(int argc, const char *argv[])
 {
-    /* Tested!
-       vector<vector<size_t> > l = genMidLayers(-1, 3, 5);
-       for(vector<vector<size_t> >::iterator i = l.begin(); i != l.end(); i++){
-       for(vector<size_t>::iterator j = i->begin(); j != i->end(); j++){
-       std::cout << *j << " ";
-       }
-       std::cout << std::endl;
-       }
-       std::cout << l.size() << std::endl;
-       return 0;
-       */
     int n = 4;
 
     // ========== First hidden layer configuration ========== //
@@ -125,27 +115,28 @@ int main(int argc, const char *argv[])
     // Higher bound of hidden layers
     unsigned int hiddenLayersTB = 4;
     // Lower bound of items for hidden layers
-    unsigned int generalHiddenLayerLB = 1;
+    unsigned int totalHiddenLayerLB = 1;
     // Higher bound of items for hidden layers
-    unsigned int generalHiddenLayerTB = 6;
+    unsigned int totalHiddenLayerTB = 6;
 
     shark::FFNet<shark::LogisticNeuron, shark::LinearNeuron> network;
     LabeledData<RealVector, RealVector> dataset = loadData();
-    size_t in_cnt dataset.inputContainer.numberOfElements();
+    // How to determine size of descriptor?
+    size_t in_cnt = dataset.inputs().element(0).size();
     shark::SquaredLoss<> loss;
 
 
     for(int fhl = firstHiddenLayerLB; fhl < firstHiddenLayerTB; fhl++){
         for(int hlCount = hiddenLayersLB; hlCount < hiddenLayersTB; hlCount++){
             if(hlCount > 0){
-                vector<vector<size_t> > hiddenMidLayers = genMidLayers(generalHiddenLayerLB, generalHiddenLayersTB, hlCount);
+                vector<vector<size_t> > hiddenMidLayers = genMidLayers(totalHiddenLayerLB, totalHiddenLayerTB, hlCount);
                 vector<vector<size_t> >::iterator l;
                 for(l = hiddenMidLayers.begin(); l != hiddenMidLayers.end(); l++){
                     std::vector<size_t> layers;
                     // Setting up architecture of NN
                     layers.push_back(in_cnt);
                     layers.push_back(fhl);
-                    push_back_s(&layer, l);
+                    push_back_s(&layers, *l);
                     layers.push_back(1);
 
                     network.setStructure(layers, shark::FFNetStructures::Normal, true);
