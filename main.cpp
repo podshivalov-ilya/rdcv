@@ -110,19 +110,20 @@ int main(int argc, const char *argv[])
 
     // ========== First hidden layer configuration ========== //
     // Lower bound of items of first hidden layer
-    unsigned int firstHiddenLayerLB = 12;
+    unsigned int firstHiddenLayerLB = 150;
     // Higher bound of items of first hidden layer
-    unsigned int firstHiddenLayerTB = 20;
+    unsigned int firstHiddenLayerTB = 151;
 
     // ========== Other hidden layers configuration ========== //
+    // rewrite for initializing as vector of ranges such as RealMatrix 
     // Lower bound of hidden layers
     unsigned int hiddenLayersLB = 1;
     // Higher bound of hidden layers
-    unsigned int hiddenLayersTB = 4;
+    unsigned int hiddenLayersTB = 2;
     // Lower bound of items for hidden layers
-    unsigned int totalHiddenLayerLB = 1;
+    unsigned int totalHiddenLayerLB = 50;
     // Higher bound of items for hidden layers
-    unsigned int totalHiddenLayerTB = 6;
+    unsigned int totalHiddenLayerTB = 51;
 
     shark::FFNet<shark::LogisticNeuron, shark::LinearNeuron> network;
     LabeledData<RealVector, RealVector> dataset = loadData();
@@ -149,22 +150,50 @@ int main(int argc, const char *argv[])
                     // All prepared
                     echoArch(layers);
 
-                    LabeledData<RealVector, RealVector> testSet, validationSet, trainingSet;
-                    trainingSet = dataset;
-                    testSet = shark::splitAtElement(trainingSet, static_cast<size_t>((1.0 - 1.0/nAllData) * trainingSet.numberOfElements()));
-                    validationSet = shark::splitAtElement(trainingSet, static_cast<size_t>((1.0 - 1.0/nCalibrationSet) * trainingSet.numberOfElements()));
+                    LabeledData<RealVector, RealVector> testSet, calibrationSet;
+                    LabeledData<RealVector, RealVector> validationSet, trainingSet;
+                    calibrationSet = dataset;
+                    testSet = shark::splitAtElement(calibrationSet, static_cast<size_t>((1.0 - 1.0/nAllData) * calibrationSet.numberOfElements()));
 
-                    shark::initRandomUniform(network, -0.1, 0.1);
-                    shark::IRpropPlus optimizer;
-                    shark::ErrorFunction<RealVector, RealVector> error(trainingSet, &network, &loss);
-                    optimizer.init(error);
-                    for(int i = 0; i < trainingSet.numberOfElements(); i++)
-                        optimizer.step(error);
+                    RealVector MSE;
+                    for(int k = 1; k < nCalibrationSet; k++){
+                        validationSet = shark::rangeSubset(calibrationSet, 0, calibrationSet.numberOfBatches() / nCalibrationSet);
+                        trainingSet = shark::rangeSubset(calibrationSet, validationSet.numberOfBatches(), calibrationSet.numberOfBatches());
+
+                        shark::initRandomUniform(network, -0.1, 0.1);
+                        shark::IRpropPlus optimizer;
+                        shark::ErrorFunction<RealVector, RealVector> error(trainingSet, &network, &loss);
+                        optimizer.init(error);
+
+                        // Add regularization conditions
+                        // and compute correlation
+                        for(int i = 0; i < trainingSet.numberOfElements(); i++)
+                            optimizer.step(error);
+
+                        double mse = 0;
+                        std::cout << "Y^\tY\n";
+                        for(int i = 0; i < validationSet.numberOfElements(); i++){
+                            RealVector Y;
+                            network.eval(validationSet.inputs().element(i), Y);
+                            //std::cout << validationSet.inputs().element(i) << std::endl;
+                            std::cout << Y(0) << '\t' << validationSet.labels().element(i) << std::endl;
+                            mse += (Y(0) - validation.labels().element(i)[0]);
+                        }
+                        mse = mse / validationSet.numberOfElements();
+                        std::cout << "MSE: " << mse << std::endl;
+                        break;
+                        calibrationSet.shuffle();
+                    }
+                    break;
+                    // Compute error after learning and add regularization conditions
                 }
             }
+            break;
         }
+        break;
     }
 
+    std::cout << "Press Enter key ^_^\n";
     std::cin.get();
     return 0;
     //*/
