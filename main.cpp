@@ -7,8 +7,11 @@
 #include <shark/Data/Dataset.h>
 #include <shark/Data/Csv.h>
 #include <shark/ObjectiveFunctions/Loss/SquaredLoss.h>
+#include <shark/ObjectiveFunctions/ErrorFunction.h>
 #include <shark/Models/FFNet.h>
 #include <shark/Core/Exception.h>
+
+#include <shark/Algorithms/GradientDescent/Rprop.h>
 
 using shark::LabeledData;
 using shark::RealVector;
@@ -101,7 +104,9 @@ int echoArch(vector<size_t> arr, std::string pre = "")
 
 int main(int argc, const char *argv[])
 {
-    int n = 4;
+    // Number of partitions
+    int nAllData = 4;
+    int nCalibrationSet = 4;
 
     // ========== First hidden layer configuration ========== //
     // Lower bound of items of first hidden layer
@@ -121,10 +126,11 @@ int main(int argc, const char *argv[])
 
     shark::FFNet<shark::LogisticNeuron, shark::LinearNeuron> network;
     LabeledData<RealVector, RealVector> dataset = loadData();
-    // How to determine size of descriptor?
-    size_t in_cnt = dataset.inputs().element(0).size();
-    shark::SquaredLoss<> loss;
+    std::cout << "DS: " << dataset.numberOfElements() << std::endl;
 
+    size_t in_cnt = dataset.inputs().element(0).size();
+
+    shark::SquaredLoss<> loss;
 
     for(int fhl = firstHiddenLayerLB; fhl < firstHiddenLayerTB; fhl++){
         for(int hlCount = hiddenLayersLB; hlCount < hiddenLayersTB; hlCount++){
@@ -142,11 +148,24 @@ int main(int argc, const char *argv[])
                     network.setStructure(layers, shark::FFNetStructures::Normal, true);
                     // All prepared
                     echoArch(layers);
+
+                    LabeledData<RealVector, RealVector> testSet, validationSet, trainingSet;
+                    trainingSet = dataset;
+                    testSet = shark::splitAtElement(trainingSet, static_cast<size_t>((1.0 - 1.0/nAllData) * trainingSet.numberOfElements()));
+                    validationSet = shark::splitAtElement(trainingSet, static_cast<size_t>((1.0 - 1.0/nCalibrationSet) * trainingSet.numberOfElements()));
+
+                    shark::initRandomUniform(network, -0.1, 0.1);
+                    shark::IRpropPlus optimizer;
+                    shark::ErrorFunction<RealVector, RealVector> error(trainingSet, &network, &loss);
+                    optimizer.init(error);
+                    for(int i = 0; i < trainingSet.numberOfElements(); i++)
+                        optimizer.step(error);
                 }
             }
         }
     }
 
+    std::cin.get();
     return 0;
     //*/
 }
