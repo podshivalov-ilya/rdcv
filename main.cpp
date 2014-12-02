@@ -102,6 +102,17 @@ int echoArch(vector<size_t> arr, std::string pre = "")
     std::cout << std::endl;
 }
 
+void echoMatrix(shark::RealMatrix m)
+{
+    std::cout << "Matrix " << m.size1() << "x" << m.size2() << std::endl;
+    for(int r = 0; r < m.size1(); r++){
+        for(int c = 0; c < m.size2(); c++)
+            std::cout << "\t\t" << m(r, c);
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
 int main(int argc, const char *argv[])
 {
     // Number of partitions
@@ -110,9 +121,9 @@ int main(int argc, const char *argv[])
 
     // ========== First hidden layer configuration ========== //
     // Lower bound of items of first hidden layer
-    unsigned int firstHiddenLayerLB = 150;
+    unsigned int firstHiddenLayerLB = 120;
     // Higher bound of items of first hidden layer
-    unsigned int firstHiddenLayerTB = 151;
+    unsigned int firstHiddenLayerTB = 121;
 
     // ========== Other hidden layers configuration ========== //
     // rewrite for initializing as vector of ranges such as RealMatrix 
@@ -121,9 +132,9 @@ int main(int argc, const char *argv[])
     // Higher bound of hidden layers
     unsigned int hiddenLayersTB = 2;
     // Lower bound of items for hidden layers
-    unsigned int totalHiddenLayerLB = 50;
+    unsigned int totalHiddenLayerLB = 15;
     // Higher bound of items for hidden layers
-    unsigned int totalHiddenLayerTB = 51;
+    unsigned int totalHiddenLayerTB = 16;
 
     shark::FFNet<shark::LogisticNeuron, shark::LinearNeuron> network;
     LabeledData<RealVector, RealVector> dataset = loadData();
@@ -150,6 +161,7 @@ int main(int argc, const char *argv[])
                     // All prepared
                     echoArch(layers);
 
+                    dataset.shuffle();
                     LabeledData<RealVector, RealVector> testSet, calibrationSet;
                     LabeledData<RealVector, RealVector> validationSet, trainingSet;
                     calibrationSet = dataset;
@@ -160,27 +172,50 @@ int main(int argc, const char *argv[])
                         validationSet = shark::rangeSubset(calibrationSet, 0, calibrationSet.numberOfBatches() / nCalibrationSet);
                         trainingSet = shark::rangeSubset(calibrationSet, validationSet.numberOfBatches(), calibrationSet.numberOfBatches());
 
-                        shark::initRandomUniform(network, -0.1, 0.1);
+                        shark::initRandomUniform(network, -0.3, 0.3);
                         shark::IRpropPlus optimizer;
                         shark::ErrorFunction<RealVector, RealVector> error(trainingSet, &network, &loss);
                         optimizer.init(error);
 
                         // Add regularization conditions
-                        // and compute correlation
                         for(int i = 0; i < trainingSet.numberOfElements(); i++)
                             optimizer.step(error);
 
                         double mse = 0;
-                        std::cout << "Y^\tY\n";
-                        for(int i = 0; i < validationSet.numberOfElements(); i++){
+                        double mvX = 0, mvY = 0;
+                        vector<double> Ys;
+                        std::cout << "Y\tX\n";
+                        for(int i = 0; i < validationSet.numberOfElements() / 2; i++){
                             RealVector Y;
+                            double x = validationSet.labels().element(i)[0];
                             network.eval(validationSet.inputs().element(i), Y);
-                            //std::cout << validationSet.inputs().element(i) << std::endl;
-                            std::cout << Y(0) << '\t' << validationSet.labels().element(i) << std::endl;
-                            mse += (Y(0) - validation.labels().element(i)[0]);
+                            std::cout << Y(0) << '\t' << x << std::endl;
+                            mse += (Y(0) - x);
+
+                            mvX += Y(0);
+                            mvY += x;
+                            Ys.push_back(Y(0));
                         }
                         mse = mse / validationSet.numberOfElements();
+                        mvX /= validationSet.numberOfElements();
+                        mvY /= validationSet.numberOfElements();
+
+                        double corr = 0;
+                        double covXY = 0;
+
+                        double sX2 = 0;
+                        double sY2 = 0;
+
+                        for(int i = 0; i < validationSet.numberOfElements(); i++){
+                            double x = validationSet.labels().element(i)[0];
+                            covXY += (Ys[0] - mvY)*(x - mvX);
+                            sX2 += (x - mvX)*(x - mvX);
+                            sY2 += (Ys[0] - mvY)*(Ys[0] - mvY);
+                        }
+                        corr = covXY / sqrt(sX2 * sY2);
+
                         std::cout << "MSE: " << mse << std::endl;
+                        std::cout << "Corr: " << corr << std::endl;
                         break;
                         calibrationSet.shuffle();
                     }
