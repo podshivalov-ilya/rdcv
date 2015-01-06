@@ -119,6 +119,9 @@ int main(int argc, const char *argv[])
     int nAllData = 4;
     int nCalibrationSet = 4;
 
+    int validationStep = 100;
+    int validationCount = 20;
+
     // ========== First hidden layer configuration ========== //
     // Lower bound of items of first hidden layer
     unsigned int firstHiddenLayerLB = 120;
@@ -178,9 +181,14 @@ int main(int argc, const char *argv[])
                         optimizer.init(error);
 
                         // Add regularization conditions
-                        for(int i = 0; i < trainingSet.numberOfElements(); i++)
+                        int validationOffset = 0;
+                        for(int i = 0; i < trainingSet.numberOfElements(); i++){
+                            if( i % validationStep == 0){
+                                // Validating
+                                if();
+                            }
                             optimizer.step(error);
-
+                        }
                         double mse = 0;
                         double mvX = 0, mvY = 0;
                         vector<double> Ys;
@@ -220,7 +228,6 @@ int main(int argc, const char *argv[])
                         calibrationSet.shuffle();
                     }
                     break;
-                    // Compute error after learning and add regularization conditions
                 }
             }
             break;
