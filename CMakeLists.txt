@@ -3,12 +3,14 @@ SET(CMAKE_BUILD_TYPE "Release")
 set (PROJECT CrossValidation)
 
 set (HEADERS
-#cross.h
+        nnmodel.h
+        lrmodel.h
     )
 
 set (SOURCES
         main.cpp
-#cross.cpp
+        nnmodel.cpp
+        lrmodel.cpp
     )
 
 
@@ -22,8 +24,6 @@ project (${PROJECT})
 #if (NOT EXISTS ${SOME_FILE})
 #    message(SEND_ERROR "Can't find foo/bar.h in ${SOME_VARIABLE}")
 #endif()
-
-#find_package( Qt5 REQUIRED COMPONENTS Core Gui Widgets Xml Sql)
 
 IF(NOT CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE "Release")
