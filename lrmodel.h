@@ -8,6 +8,9 @@
 #include <iostream>
 #include <string>
 
+using std::cerr;
+using std::endl;
+
 class LRModel
 {
     private:

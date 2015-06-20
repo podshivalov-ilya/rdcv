@@ -1,9 +1,24 @@
-#define DEBUG
-#include "nnmodel.h"
-#include "lrmodel.h"
+//#define DEBUG
+//#include "nnmodel.h"
+//#include "lrmodel.h"
+// gnuplot
+#include "confgen.h"
 
 int main(int argc, const char *argv[])
 {
+    ConfGen cfg;
+    cfg.setInputDimention(50);
+    cfg.setOutputDimention(1);
+    cfg.setFirstHiddenLayerRange(0, 61);
+    cfg.setOtherHiddenLayerRange(1, 2);
+    cfg.setHiddenLayersRange(0, 2);
+    if(cfg.prepare()){
+        while(cfg.next())
+            std::cout << cfg << std::endl;
+    }
+
+    
+    /*
     std::cout << "Linear regression\n";
     LRModel *lrForCompare = new LRModel();
     std::cout << lrForCompare->loadData("./data/2/descriptors.csv", "./data/2/mtp.csv") << std::endl;
@@ -20,4 +35,5 @@ int main(int argc, const char *argv[])
     rdcvNN->evaluate();
     delete rdcvNN;
     return 0;
+    */
 }

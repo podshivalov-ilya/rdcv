@@ -3,14 +3,16 @@ SET(CMAKE_BUILD_TYPE "Release")
 set (PROJECT CrossValidation)
 
 set (HEADERS
-        nnmodel.h
-        lrmodel.h
+        confgen.h
+#nnmodel.h
+#lrmodel.h
     )
 
 set (SOURCES
+        confgen.cpp
         main.cpp
-        nnmodel.cpp
-        lrmodel.cpp
+#nnmodel.cpp
+#lrmodel.cpp
     )
 
 

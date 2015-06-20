@@ -354,11 +354,11 @@ int NNModel::evaluate()
                     }
                     corr = covXY / sqrt(sX2 * sY2);
                     qsq = 1.0 - deltaSum / sX2;
+                    echoArch(layers);
 
 #ifndef DEBUG
                     if(corr*corr > 0.5){
 #endif
-                        echoArch(layers);
                         cerr << "MSE: " << mse << std::endl;
                         cerr << "Corr^2: " << corr*corr << std::endl;
                         cerr << "q^2: " << qsq << std::endl;

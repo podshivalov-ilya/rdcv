@@ -4,7 +4,6 @@
 
 LRModel::LRModel()
 {
-    //
     nValidationSet = 4;
 }
 
@@ -17,32 +16,31 @@ bool LRModel::loadData(std::string dataFileName, std::string labelsFileName)
         shark::importCSV(labels, labelsFileName, ' ', '#');
         shark::importCSV(data, dataFileName, ' ', '#');
     } catch (shark::Exception e){
-        std::cerr << "Exception!\n\t" << e.file() << "\t" << e.line() << "\t" << e.what() << std::endl;
-        std::cerr << "Unable to open file " <<  dataFileName << " and/or " << labelsFileName << ". Check paths!" << std::endl;
+        cerr << "Exception!\n\t" << e.file() << "\t" << e.line() << "\t" << e.what() << std::endl;
+        cerr << "Unable to open file " <<  dataFileName << " and/or " << labelsFileName << ". Check paths!" << std::endl;
         return false;
     }
     dataset = shark::LabeledData<shark::RealVector, shark::RealVector> (data, labels);
 
     //in_cnt = shark::dataDimension(dataset.inputs());
-    return true;
-}
+    return true; }
 
 int LRModel::evaluate()
 {
-    std::cout << "dataset NOE: " << dataset.numberOfElements() << std::endl;
+    cerr << "dataset NOE: " << dataset.numberOfElements() << std::endl;
     shark::RegressionDataset validationSet = shark::splitAtElement(dataset, static_cast<size_t>((1.0 - 1.0/nValidationSet) * dataset.numberOfElements()));
-    std::cout << "dataset NOE: " << dataset.numberOfElements() << std::endl;
-    std::cout << "vset NOE: " << validationSet.numberOfElements() << std::endl;
+    cerr << "dataset NOE: " << dataset.numberOfElements() << std::endl;
+    cerr << "vset NOE: " << validationSet.numberOfElements() << std::endl;
 
     trainer.train(model, dataset);
 
-    std::cout << "Intercept: " << model.offset() << std::endl;
-    std::cout << "Matrix: " << model.matrix() << std::endl;
+    cerr << "Intercept: " << model.offset() << std::endl;
+    cerr << "Matrix: " << model.matrix() << std::endl;
 
     shark::Data<shark::RealVector> prediction = model(validationSet.inputs());
-    std::cout << "MSE: " << loss(validationSet.labels(), prediction) << std::endl;
+    cerr << "MSE: " << loss(validationSet.labels(), prediction) << std::endl;
 
-    std::cout << "pred NOE: " << prediction.numberOfElements() << std::endl;
+    cerr << "pred NOE: " << prediction.numberOfElements() << std::endl;
     // Section of calculate model parametres. Wrap to other function.
 
     // X is observed value
@@ -59,7 +57,7 @@ int LRModel::evaluate()
     // delta = SUM( Y - X )^2
     double deltaSum = 0;     // Sum of squared differ between calculated and observed. There is upper half of q^2
 #ifdef DEBUG
-    std::cerr << "Y\tX\tdelta^2\n";
+    cerr << "Y\tX\tdelta^2\n";
 #endif
     for(int i = 0; i < validationSet.numberOfElements() - 1; i++){
         // getting i-ths observed value
@@ -67,7 +65,7 @@ int LRModel::evaluate()
         // evaluate i-ths set to Y
         deltaSum += (prediction.element(i)[1] - x) * (prediction.element(i)[1] - x);
 #ifdef DEBUG
-        std::cerr << prediction.element(i)[1] << '\t' << x << '\t' << (prediction.element(i)[1] - x)*(prediction.element(i)[1] - x) << std::endl;
+        cerr << prediction.element(i)[1] << '\t' << x << '\t' << (prediction.element(i)[1] - x)*(prediction.element(i)[1] - x) << std::endl;
 #endif
         mse += (prediction.element(i)[1] - x)*(prediction.element(i)[1] - x);
 
@@ -105,9 +103,9 @@ int LRModel::evaluate()
     if(corr*corr > 0.9){
 #endif
         //echoArch(layers);
-        std::cerr << "MSE: " << mse << std::endl;
-        std::cerr << "Corr^2: " << corr*corr << std::endl;
-        std::cerr << "q^2: " << qsq << std::endl;
+        cerr << "MSE: " << mse << std::endl;
+        cerr << "Corr^2: " << corr*corr << std::endl;
+        cerr << "q^2: " << qsq << std::endl;
 #ifndef DEBUG
     }
 #endif
