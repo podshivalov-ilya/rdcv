@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <signal.h>
 
-#include <sys/inotify.h>
+#include <sys/epoll.h>
 
 static void signals_handler(int signo)
 {
@@ -63,6 +63,7 @@ int main(int argc, char **argv)
             fds[0].fd = 0;
             fds[0].events = POLLIN;
 
+            int i = 0;
             while(1){
                 int ret = poll(fds, 1, -1);
                 if(ret == -1){
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
                         val = getpid();
 
                         char buf[33];
-                        sprintf(buf, "%s %d", c, val);
+                        sprintf(buf, "%s %d №%d", c, val, i++);
                         write(1, buf, 33);
                         continue;
                     }
@@ -106,51 +107,54 @@ int main(int argc, char **argv)
     signal(SIGPIPE, signals_handler);
 
     // PARENT
+    // Initializing pipe watcher
+    int epfd = epoll_create(childrenCount);
+    if(epfd < 0)
+        perror("epoll_create!");
 
-    // Initializing pipe wather
-    struct pollfd fds[childrenCount];
     for(size_t i = 0; i < childrenCount; i++){
-        fds[i].fd = fd1[i][0];
-        fds[i].events = POLLIN;
+        struct epoll_event event;
+        int ret;
+
+        event.data.ptr = fd1[i];
+        event.events = EPOLLIN;
+
+        ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fd1[i][0], &event);
+        if(ret)
+            perror("epoll_ctl");
     }
 
-    int ctrl = 0;
-    while(1){
-        for(size_t i = 0; i < childrenCount; i++){
+    struct epoll_event *eBack;
+    eBack = malloc(sizeof(struct epoll_event));
+    if(!eBack){
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+
+    for(size_t i = 0; i < childrenCount; i++){
+        char buf[33];
+        sprintf(buf, "%d", getpid());   // Send parent id to children
+        write(fd1[i][1], buf, 33);
+    }
+
+    int i = 0;
+    // There is waiter for 1 event because after getting results of processes this send new data for processing
+    while(epoll_wait(epfd, eBack, 1, -1) > 0){
+        //
+        if(eBack->events == EPOLLIN){
+            char c[BUFSIZ];
+            int len = 0;
+            int *fd = (int *)eBack->data.ptr;
+            if((len = read(fd[0], c, BUFSIZ)) != 0)
+                printf("%d: %s\n", i++, c);
+
             char buf[33];
             sprintf(buf, "%d", getpid());   // Send parent id to children
-            printf("iteration %d fd %d\n", i, fd1[i][1]);
-            size_t ret = write(fd1[i][1], buf, 33);
-            if(ret == -1)
-                perror("write failure\n");
+            write(fd[1], buf, 33);
         }
-
-        // waiting feedback from child processes
-        int chF = 0;
-        while(1){
-            int ret = poll(fds, childrenCount, -1);
-
-            if(ret == -1){
-                perror("poll error");
-                exit(EXIT_FAILURE);
-            }
-            for(size_t i = 0; i < childrenCount; i++){
-                if(fds[i].revents & POLLIN){
-                    char c[BUFSIZ];
-                    int len = 0;
-                    if((len = read(fds[i].fd, c, BUFSIZ)) != 0)
-                        printf("%d: %s\n", i, c);
-                    chF++;
-                }
-            }
-            if(chF >= childrenCount)
-                break;
-        }
-
-        // I wanna go out from this loop after 2 iterations
-        //if(++ctrl > 1)
-        //    break;
     }
+    free(eBack);
+
     printf("waiting finished\n");
 
     while(1)
