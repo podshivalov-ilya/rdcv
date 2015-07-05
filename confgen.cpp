@@ -137,3 +137,12 @@ std::ostream &operator<< (std::ostream &out, ConfGen &cfg)
     out << config[config.size() - 1];
     return out;
 }
+
+std::string ConfGen::textConf()
+{
+    std::ostringstream txtConf;
+    for(size_t i = 0; i < currentConfig.size() - 1; i++)
+        txtConf << currentConfig[i] << "-";
+    txtConf << currentConfig[currentConfig.size() - 1];
+    return txtConf.str();
+}

@@ -4,15 +4,15 @@ set (PROJECT CrossValidation)
 
 set (HEADERS
         confgen.h
-#nnmodel.h
-#lrmodel.h
+nnmodel.h
+lrmodel.h
     )
 
 set (SOURCES
         confgen.cpp
         main.cpp
-#nnmodel.cpp
-#lrmodel.cpp
+nnmodel.cpp
+lrmodel.cpp
     )
 
 

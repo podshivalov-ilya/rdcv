@@ -23,7 +23,8 @@ bool LRModel::loadData(std::string dataFileName, std::string labelsFileName)
     dataset = shark::LabeledData<shark::RealVector, shark::RealVector> (data, labels);
 
     //in_cnt = shark::dataDimension(dataset.inputs());
-    return true; }
+    return true;
+}
 
 int LRModel::evaluate()
 {

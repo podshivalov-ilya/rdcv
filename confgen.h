@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 class ConfGen
 {
@@ -16,6 +17,8 @@ class ConfGen
         void setOtherHiddenLayerRange(size_t lb, size_t tb);
         void setHiddenLayersRange(size_t lb, size_t tb);
 
+        std::string textConf();
+
         std::vector<size_t> get();
         bool next();
         bool prepare();
@@ -25,25 +28,21 @@ class ConfGen
         size_t firstHiddenLayerLB;
         // Higher bound of items of first hidden layer
         size_t firstHiddenLayerTB;
-        // }
 
-        // There are not changeable {
         // Lower bound of hidden layers
         size_t hiddenLayersLB;
         // Higher bound of hidden layers
         size_t hiddenLayersTB;
-        // }
 
-        // There are not changeable {
         // Lower bound of items for hidden layers
         size_t totalHiddenLayerLB;
         // Higher bound of items for hidden layers
         size_t totalHiddenLayerTB;
-        // }
         
         // {In,Out}put dimentions
         size_t in_cnt;
         size_t out_cnt;
+        // }
 
         // Changeable properties
         // For storing current first hidden layer
@@ -62,4 +61,3 @@ class ConfGen
         friend std::ostream &operator<< (std::ostream &out, ConfGen &cfg);
 };
 
-/*Обрабатывать в цикле, сравнивая предыдущую и текущую конфигурацию*/

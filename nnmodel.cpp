@@ -228,8 +228,10 @@ int NNModel::evaluate()
                     push_back_s(&layers, *l);
                     layers.push_back(1);
 
-                    //network.setStructure(layers, shark::FFNetStructures::Normal, true);
-                    network = unsupervisedPreTraining(dataset.inputs(), layers, 0.001, 1000, 0.1);
+                    if(preBM)
+                        network = unsupervisedPreTraining(dataset.inputs(), layers, 0.001, 1000, 0.1);
+                    else
+                        network.setStructure(layers, shark::FFNetStructures::Normal, true);
                     // All prepared
 #ifdef DEBUG
                     echoArch(layers);
