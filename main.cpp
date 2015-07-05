@@ -81,6 +81,7 @@ int main(int argc, const char *argv[])
         << std::endl << rdcvNN->setOtherHiddenLayerRange(ohlB, ohlT)
         << std::endl << rdcvNN->setHiddenLayersRange(hlrB, hlrT)
         << std::endl;
+    rdcvNN->setPreBM(true);
     rdcvNN->evaluate();
     delete rdcvNN;
     return 0;
